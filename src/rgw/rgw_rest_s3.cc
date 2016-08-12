@@ -281,13 +281,13 @@ done:
   }
 
   if (metadata_bl.length()) {
-    STREAM_IO(s)->write(metadata_bl.c_str(), metadata_bl.length());
+    dump_body(s, metadata_bl);
   }
   sent_header = true;
 
 send_data:
   if (get_data && !op_ret) {
-    int r = STREAM_IO(s)->write(bl.c_str() + bl_ofs, bl_len);
+    int r = dump_body(s, bl.c_str() + bl_ofs, bl_len);
     if (r < 0)
       return r;
   }
@@ -1379,9 +1379,7 @@ int RGWPostObj_ObjStore_S3::read_with_boundary(bufferlist& bl, uint64_t max,
 
     bufferptr bp(need_to_read);
 
-    int read_len;
-    STREAM_IO(s)->read(bp.c_str(), need_to_read, &read_len);
-
+    const auto read_len = recv_body(s, bp.c_str(), need_to_read);
     in_data.append(bp, 0, read_len);
   }
 
@@ -1408,8 +1406,7 @@ int RGWPostObj_ObjStore_S3::read_with_boundary(bufferlist& bl, uint64_t max,
     if (left < skip + 2) {
       int need = skip + 2 - left;
       bufferptr boundary_bp(need);
-      int actual;
-      STREAM_IO(s)->read(boundary_bp.c_str(), need, &actual);
+      recv_body(s, boundary_bp.c_str(), need);
       in_data.append(boundary_bp);
     }
     max += skip; // skip boundary for next time
@@ -2202,7 +2199,7 @@ void RGWGetACLs_ObjStore_S3::send_response()
   end_header(s, this, "application/xml");
   dump_start(s);
   rgw_flush_formatter(s, s->formatter);
-  STREAM_IO(s)->write(acls.c_str(), acls.size());
+  dump_body(s, acls);
 }
 
 int RGWPutACLs_ObjStore_S3::get_params()
@@ -2326,7 +2323,7 @@ void RGWGetCORS_ObjStore_S3::send_response()
 
     s3cors->to_xml(ss);
     cors = ss.str();
-    STREAM_IO(s)->write(cors.c_str(), cors.size());
+    dump_body(s, cors);
   }
 }
 
@@ -2347,11 +2344,11 @@ int RGWPutCORS_ObjStore_S3::get_params()
        r = -ENOMEM;
        goto done_err;
     }
-    int read_len;
-    r = STREAM_IO(s)->read(data, cl, &read_len, s->aws4_auth_needs_complete);
-    len = read_len;
-    if (r < 0)
+    len = recv_body(s, data, cl);
+    if (len < 0) {
+      r = len;
       goto done_err;
+    }
     data[len] = '\0';
   } else {
     len = 0;
