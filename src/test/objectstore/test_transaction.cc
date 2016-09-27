@@ -79,7 +79,6 @@ TEST(Transaction, Swap)
 ObjectStore::Transaction generate_transaction()
 {
   auto a = ObjectStore::Transaction{};
-  a.set_use_tbl(false);
   a.nop();
 
   coll_t cid;
@@ -115,7 +114,6 @@ ObjectStore::Transaction generate_transaction()
 TEST(Transaction, GetNumBytes)
 {
   auto a = ObjectStore::Transaction{};
-  a.set_use_tbl(false);
   a.nop();
   ASSERT_TRUE(a.get_encoded_bytes() == a.get_encoded_bytes_test());
 
