@@ -498,8 +498,9 @@ void MonClient::handle_auth(MAuthReply *m)
       // otherwise it will give us an auth error
       if ((want_keys & CEPH_ENTITY_TYPE_MGR) &&
 	  !m->get_connection()->has_feature(CEPH_FEATURE_SERVER_KRAKEN)) {
-	dout(1) << __func__ << " not requesting MGR keys from pre-kraken monitor"
-		<< dendl;
+	ldout(cct, 1) << __func__
+		      << " not requesting MGR keys from pre-kraken monitor"
+		      << dendl;
 	want_keys &= ~CEPH_ENTITY_TYPE_MGR;
       }
       auth->set_want_keys(want_keys);
